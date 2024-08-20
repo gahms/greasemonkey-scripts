@@ -6,6 +6,7 @@
 // @grant    GM.notification
 // @grant    GM_registerMenuCommand
 // @match  https://*.atlassian.net/jira/*
+// @match  https://*.atlassian.net/browse/*
 // @include  https://jira.*
 // ==/UserScript==
 
