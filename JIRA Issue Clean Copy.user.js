@@ -88,7 +88,7 @@ function copyIssue(key, summary, isBranchNameCopy, isMarkdown) {
     cleanedName = `${key}-${summaryCleaned}`;
   } else {
     const summaryCleaned = summary
-      .replaceAll(/[^A-Za-z0-9_ .,:;!?|&/=+*<>"'()-]/g, ' ')
+      .replaceAll(/[^A-Za-z0-9æøåÆØÅ_ .,:;!?|&/=+*<>"'()-]/g, ' ')
       .replaceAll(/ {2,}/g, ' ')
       .replaceAll(/\W$/g, '')
     cleanedName = `${key}: ${summaryCleaned}`;
