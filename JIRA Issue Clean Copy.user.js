@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Issue Clean Copy
 // @description Copy Jira issue key and summary
-// @version  1
+// @version  2
 // @grant    GM.setClipboard
 // @grant    GM.notification
 // @grant    GM_registerMenuCommand
