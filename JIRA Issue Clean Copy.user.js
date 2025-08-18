@@ -93,8 +93,8 @@ function copyIssue(key, summary, isBranchNameCopy, isMarkdown) {
       .replaceAll(/\W$/g, '')
     cleanedName = `${key}: ${summaryCleaned}`;
     if (isMarkdown) {
-        const url = `${window.location.origin}/browse/${key}`;
-        cleanedName = `[${cleanedName}](${url})`
+      const url = `${window.location.origin}/browse/${key}`;
+      cleanedName = `[${cleanedName}](${url})`
     }
   }
 
@@ -174,28 +174,28 @@ function findSelectedIssueKey() {
   return null;
 }
 
-async function copyMarkdown () {
-    const selectedIssueKey = findSelectedIssueKey();
-    if (!selectedIssueKey) {
-      return;
-    }
-    const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
-    const issueDetailsResponse = await fetch(issueDetailsEndpoint);
-    const { fields: { summary } } = await issueDetailsResponse.json();
+async function copyMarkdown() {
+  const selectedIssueKey = findSelectedIssueKey();
+  if (!selectedIssueKey) {
+    return;
+  }
+  const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
+  const issueDetailsResponse = await fetch(issueDetailsEndpoint);
+  const { fields: { summary } } = await issueDetailsResponse.json();
 
-    copyIssue(selectedIssueKey, summary, false, true);
+  copyIssue(selectedIssueKey, summary, false, true);
 }
 
-async function copyJiraSummary () {
-    const selectedIssueKey = findSelectedIssueKey();
-    if (!selectedIssueKey) {
-      return;
-    }
-    const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
-    const issueDetailsResponse = await fetch(issueDetailsEndpoint);
-    const { fields: { summary } } = await issueDetailsResponse.json();
+async function copyJiraSummary() {
+  const selectedIssueKey = findSelectedIssueKey();
+  if (!selectedIssueKey) {
+    return;
+  }
+  const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
+  const issueDetailsResponse = await fetch(issueDetailsEndpoint);
+  const { fields: { summary } } = await issueDetailsResponse.json();
 
-    copyIssue(selectedIssueKey, summary, false, false);
+  copyIssue(selectedIssueKey, summary, false, false);
 }
 
 document.addEventListener('keydown', async e => {
@@ -208,7 +208,8 @@ document.addEventListener('keydown', async e => {
   }
 
 
-  if (e.code === 'KeyC' || e.code === 'KeyX' || e.code === 'KeyZ' || e.code === 'KeyM') {
+  if (e.code === 'KeyC' || e.code === 'KeyX' || e.code === 'KeyZ'
+    || e.code === 'KeyM' || e.code === 'KeyK') {
     const selectedText = window.getSelection().toString();
 
     if (selectedText) {
@@ -218,6 +219,7 @@ document.addEventListener('keydown', async e => {
     const isBranchNameCopy = e.code === 'KeyC';
     const isUrlCopy = e.code === 'KeyZ';
     const isMarkdown = e.code === 'KeyM';
+    const isKeyCopy = e.code === 'KeyK'
 
     const selectedIssueKey = findSelectedIssueKey();
     if (!selectedIssueKey) {
@@ -225,6 +227,12 @@ document.addEventListener('keydown', async e => {
     }
 
     console.log(`Selected issue: ${selectedIssueKey}`);
+
+    if (isKeyCopy) {
+      GM.setClipboard(selectedIssueKey);
+      showSnackbar(`Issue '${key}' key copied to clipboard`);
+      return;
+    }
     const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
     const issueDetailsResponse = await fetch(issueDetailsEndpoint);
     const { fields: { summary } } = await issueDetailsResponse.json();
