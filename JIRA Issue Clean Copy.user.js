@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Issue Clean Copy
 // @description Copy Jira issue key and summary
-// @version  2
+// @version  3
 // @grant    GM.setClipboard
 // @grant    GM.notification
 // @grant    GM_registerMenuCommand
@@ -230,7 +230,7 @@ document.addEventListener('keydown', async e => {
 
     if (isKeyCopy) {
       GM.setClipboard(selectedIssueKey);
-      showSnackbar(`Issue '${key}' key copied to clipboard`);
+      showSnackbar(`Issue '${selectedIssueKey}' key copied to clipboard`);
       return;
     }
     const issueDetailsEndpoint = `${window.location.origin}/rest/api/latest/issue/${selectedIssueKey}`;
