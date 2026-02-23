@@ -167,8 +167,13 @@ function findSelectedIssueKey() {
   }
 
   const issuePathMatches = url.pathname.match(/\/browse\/(.*-.*)/);
-  if (issuePathMatches.length > 1) {
+  if (issuePathMatches && issuePathMatches.length > 1) {
     return issuePathMatches[1];
+  }
+
+  const queueIssuePathMatches = url.pathname.match(/\/queues\/custom\/.*\/(.*-.*)/);
+  if (queueIssuePathMatches && queueIssuePathMatches.length > 1) {
+    return queueIssuePathMatches[1];
   }
 
   return null;
