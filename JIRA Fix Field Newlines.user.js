@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Fix Field Newlines
 // @description Insert missing newlines between support form fields when editing a Jira ticket
-// @version  2
+// @version  3
 // @grant    GM.setClipboard
 // @grant    GM_registerMenuCommand
 // @match  https://*.atlassian.net/jira/*
@@ -144,6 +144,38 @@ function formatAttachments(value) {
   return ` \n${items.join(' \n')}${value.slice(lastIndex)}`;
 }
 
+// Phrases that start the sign-off of a message, longest first so the longest match wins.
+const signOffPhrases = [
+  'Med venlig hilsen',
+  'De bedste hilsner',
+  'Bedste hilsner',
+  'Venlig hilsen',
+  'Hilsen',
+  'Mvh.',
+  'Mvh',
+];
+
+const signOffPattern = new RegExp(
+  `\\s(${signOffPhrases.map(escapeRegExp).join('|')})\\s+(?=\\S)`, 'g');
+
+// Puts the sign-off of a message and the signature after it on their own lines, e.g.
+// 'De bedste hilsner\nLagkagehuset A/S / ... / www.lagkagehuset.dk\nCVR-nr.: 20213094'.
+// The signature is at the end, so the last sign-off phrase in the message is used.
+function formatSignature(body) {
+  const match = [...body.matchAll(signOffPattern)].pop();
+
+  if (!match) {
+    return body;
+  }
+
+  const message = body.slice(0, match.index);
+  const signature = body
+    .slice(match.index + match[0].length)
+    .replace(/\s+(CVR-nr\.:)/g, '\n$1');
+
+  return `${message}\n${match[1]}\n${signature}`;
+}
+
 // Finds the name of the sender in front of a message header. The text before the header is the end
 // of the previous message, so the name is preferably one of the known names from the 'To:' parts.
 // Otherwise it is assumed to be the last one or two capitalized words.
@@ -174,7 +206,7 @@ function formatMessageThread(text) {
   const headers = [...text.matchAll(headerPattern)];
 
   if (headers.length === 0) {
-    return text;
+    return formatSignature(text);
   }
 
   const knownNames = headers
@@ -188,10 +220,10 @@ function formatMessageThread(text) {
   for (const header of headers) {
     const textBefore = text.slice(position, header.index).trimEnd();
     const senderName = findSenderName(textBefore, knownNames);
-    const body = textBefore
+    const body = formatSignature(textBefore
       .slice(0, textBefore.length - senderName.length)
       .replace(/\s*New messages\s*$/, '')
-      .trim();
+      .trim());
 
     if (nextHeader !== null || body !== '') {
       messages.push(nextHeader === null ? body : `${nextHeader}\n${body}`);
@@ -201,7 +233,7 @@ function formatMessageThread(text) {
     position = header.index + header[0].length;
   }
 
-  messages.push(`${nextHeader}\n${text.slice(position).trim()}`);
+  messages.push(`${nextHeader}\n${formatSignature(text.slice(position).trim())}`);
 
   return messages.join('\n\n');
 }
