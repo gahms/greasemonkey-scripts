@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Fix Field Newlines
 // @description Insert missing newlines between support form fields when editing a Jira ticket
-// @version  3
+// @version  4
 // @grant    GM.setClipboard
 // @grant    GM_registerMenuCommand
 // @match  https://*.atlassian.net/jira/*
@@ -235,7 +235,7 @@ function formatMessageThread(text) {
 
   messages.push(`${nextHeader}\n${formatSignature(text.slice(position).trim())}`);
 
-  return messages.join('\n\n');
+  return messages.join('\n\n---\n\n');
 }
 
 // Splits off free text that directly follows the email address of an email field. Returns null if
