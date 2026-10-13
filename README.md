@@ -14,6 +14,9 @@ Fix support form text in a Jira ticket where the newline between each field is m
 `store: ... date: ... produkt: ...`. Each field is put on its own line, and each item in
 `attachments` gets its own line too.
 
+If free text follows the `author` email, like a copied message thread, it is moved to its own
+lines, and each message in the thread (`Name • Date To: ... Show more`) gets its own block.
+
 Open the ticket description editor and press `Ctrl+Shift+F`, or choose "Fix field newlines" from
 the Tampermonkey menu. If the editor cannot be updated, the fixed text is copied to the clipboard
 instead.

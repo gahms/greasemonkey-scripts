@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Fix Field Newlines
 // @description Insert missing newlines between support form fields when editing a Jira ticket
-// @version  1
+// @version  2
 // @grant    GM.setClipboard
 // @grant    GM_registerMenuCommand
 // @match  https://*.atlassian.net/jira/*
@@ -10,8 +10,11 @@
 // ==/UserScript==
 
 
-// The fields in the order they appear in the text.
+// The fields in the order they appear in the text. The different support forms use different
+// subsets of these fields, but always in this order.
 const fieldNames = [
+  'telefonmodel',
+  'app-version',
   'store',
   'date',
   'produkt',
@@ -27,6 +30,10 @@ const fieldNames = [
   'support-category',
   'attachments',
 ];
+
+// Fields whose value is a single email address. Free text, like a message thread, may follow
+// directly after the value of these.
+const emailFieldNames = ['author', 'email2'];
 
 // Minimum number of fields a text must contain before it is considered malformed field text.
 const minimumFieldCount = 3;
@@ -137,6 +144,88 @@ function formatAttachments(value) {
   return ` \n${items.join(' \n')}${value.slice(lastIndex)}`;
 }
 
+// Finds the name of the sender in front of a message header. The text before the header is the end
+// of the previous message, so the name is preferably one of the known names from the 'To:' parts.
+// Otherwise it is assumed to be the last one or two capitalized words.
+function findSenderName(textBefore, knownNames) {
+  const knownName = knownNames.find(name => textBefore === name || textBefore.endsWith(` ${name}`));
+  if (knownName) {
+    return knownName;
+  }
+
+  const words = textBefore.split(/\s+/);
+  const nameWords = [];
+  while (nameWords.length < 2 && words.length > 0 && /^\p{Lu}/u.test(words[words.length - 1])) {
+    nameWords.unshift(words.pop());
+  }
+
+  if (nameWords.length === 0) {
+    return words[words.length - 1] || '';
+  }
+
+  return nameWords.join(' ');
+}
+
+// Splits a copied message thread into separate messages. Each message starts with a header like
+// 'Kim Starck • Sep 25 10:52 To: Signeraecke Show more'. The 'Show more', 'Show less' and
+// 'New messages' labels are copied buttons and markers, so they are removed.
+function formatMessageThread(text) {
+  const headerPattern = /\s•\s(.+?)\sTo:\s(.+?)\sShow (?:more|less)\b\s*/g;
+  const headers = [...text.matchAll(headerPattern)];
+
+  if (headers.length === 0) {
+    return text;
+  }
+
+  const knownNames = headers
+    .map(header => header[2].replace(/\s*<[^>]*>$/, ''))
+    .sort((a, b) => b.length - a.length);
+
+  const messages = [];
+  let position = 0;
+  let nextHeader = null;
+
+  for (const header of headers) {
+    const textBefore = text.slice(position, header.index).trimEnd();
+    const senderName = findSenderName(textBefore, knownNames);
+    const body = textBefore
+      .slice(0, textBefore.length - senderName.length)
+      .replace(/\s*New messages\s*$/, '')
+      .trim();
+
+    if (nextHeader !== null || body !== '') {
+      messages.push(nextHeader === null ? body : `${nextHeader}\n${body}`);
+    }
+
+    nextHeader = `${senderName} • ${header[1]} To: ${header[2]}`;
+    position = header.index + header[0].length;
+  }
+
+  messages.push(`${nextHeader}\n${text.slice(position).trim()}`);
+
+  return messages.join('\n\n');
+}
+
+// Splits off free text that directly follows the email address of an email field. Returns null if
+// the value is just the email address, possibly followed by another field.
+function splitEmailValue(text, valueIndex) {
+  const emailMatch = text.slice(valueIndex).match(/^\s*\S+@\S+/);
+  if (!emailMatch) {
+    return null;
+  }
+
+  const valueEnd = valueIndex + emailMatch[0].length;
+  const rest = text.slice(valueEnd);
+  const startsWithField = fieldNames.some(fieldName =>
+    new RegExp(`^\\s+${escapeRegExp(fieldName)}:`).test(rest));
+
+  if (rest.trim() === '' || startsWithField) {
+    return null;
+  }
+
+  return { value: text.slice(valueIndex, valueEnd), freeText: rest.trim() };
+}
+
 // Inserts a newline before each known field. The fields are searched for in their expected order,
 // so text in a field value that happens to look like an earlier field is left alone.
 function formatFields(text) {
@@ -158,12 +247,22 @@ function formatFields(text) {
       result += '\n';
     }
     position = fieldIndex;
+    const valueIndex = fieldIndex + fieldName.length + 1;
 
     if (fieldName === 'attachments') {
-      const valueIndex = fieldIndex + fieldName.length + 1;
       result += text.slice(position, valueIndex);
       result += formatAttachments(text.slice(valueIndex));
       return result;
+    }
+
+    if (emailFieldNames.includes(fieldName)) {
+      const emailValue = splitEmailValue(text, valueIndex);
+
+      if (emailValue) {
+        result += text.slice(position, valueIndex) + emailValue.value;
+        result += `\n${formatMessageThread(emailValue.freeText)}`;
+        return result;
+      }
     }
   }
 
