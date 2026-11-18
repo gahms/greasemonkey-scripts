@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     JIRA Issue Clean Copy
 // @description Copy Jira issue key and summary
-// @version  5
+// @version  6
 // @grant    GM.setClipboard
 // @grant    GM.notification
 // @grant    GM_registerMenuCommand
@@ -88,9 +88,9 @@ function copyIssue(key, summary, isBranchNameCopy, isMarkdown) {
     cleanedName = `${key}-${summaryCleaned}`;
   } else {
     const summaryCleaned = summary
-      .replaceAll(/[^A-Za-z0-9æøåÆØÅ_ .,:;!?|&/=+*<>"'()-]/g, ' ')
+      .replaceAll(/[^A-Za-z0-9æøåÆØÅ_ .,:;!?|&/=+*<>"'()\[\]-]/g, ' ')
       .replaceAll(/ {2,}/g, ' ')
-      .replaceAll(/[^\wæøåÆØÅ)]$/g, '')
+      .replaceAll(/[^\wæøåÆØÅ)\]>]$/g, '')
     cleanedName = `${key}: ${summaryCleaned}`;
     if (isMarkdown) {
       const url = `${window.location.origin}/browse/${key}`;
